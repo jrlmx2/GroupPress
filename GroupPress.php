@@ -9,8 +9,18 @@
  */
 
 namespace GroupPress;
+require ( 'install.php' );
+require ( 'install/Install.php' );
+use GroupPress\install as GP_Install;
 
+function create_post_type($text = null)
+{
 
-/* Is this plugin active? Check a Post. */
-add_filter( 'the_content' , create_function( '', 'var_dump( current_filter() );' ) );
+	do_action( 'GroupPress_before_install' );
 
+	GP_Install\Install::establish_post_type();
+	GP_Install\Install::establish_post_status();
+
+	do_action( 'GroupPress_after_install' );
+}
+register_activation_hook(__FILE__, 'create_post_type');

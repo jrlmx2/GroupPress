@@ -38,15 +38,15 @@ interface install
  *
  * @return void
  */
-	public function establish_post_type();
+	public static function establish_post_type();
 
 /*
- * Generate a new post type named GroupPress
+ * Generate a new status types for the group post type
  *
  *
  * @return void
  */
-	public function setup_group_admin();
+	public static function establish_post_status();
 
 }
 ?>
