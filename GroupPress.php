@@ -9,18 +9,10 @@
  */
 
 namespace GroupPress;
-require ( 'install.php' );
-require ( 'install/Install.php' );
-use GroupPress\install as GP_Install;
+require_once ( 'plugin.php' );
+require_once ( 'plugin/GroupPressPlugin.php' );
+use GroupPress\plugin as plugin;
 
-function create_post_type($text = null)
-{
-
-	do_action( 'GroupPress_before_install' );
-
-	GP_Install\Install::establish_post_type();
-	GP_Install\Install::establish_post_status();
-
-	do_action( 'GroupPress_after_install' );
-}
-register_activation_hook(__FILE__, 'create_post_type');
+global $GroupPress;
+$GroupPress = new plugin\GroupPress();
+$GroupPress->bootstrap();
