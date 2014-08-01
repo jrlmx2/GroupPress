@@ -72,7 +72,7 @@ Class GroupPress
 		add_option( 'GroupPress_db_ver', self::DB_VER );
 
 		add_option( 'GroupPress_prev_ver', 0 );
-		add_option( 'GroupPress_posts_per_page', 10 );
+		add_option( 'GroupPress_posts_per_page', 5 );
 		add_option( 'GroupPress_show_welcome_page', true );
 	}
 
