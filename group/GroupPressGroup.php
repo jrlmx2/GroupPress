@@ -30,23 +30,15 @@ namespace GroupPress\group;
 	*/
 
 final class GroupPressGroup
-	extends \WP_Post
 	implements group
 {
-/*
- *  Register post types for groups
- *
- *
- *
- *  @return void
- */
 
 /*
  * Array of member IDs.
  *
  * @array string
  */
-	public members = '';
+	public $members = '';
 
 /*
  * Post Type String for object checking
@@ -54,8 +46,49 @@ final class GroupPressGroup
  *
  * @var string
  */
-	public final post_type = 'GroupPress-group';
+	public static final $post_type = 'GroupPress-group';
 
+
+/*
+ * Group Wordpress Post Information
+ *
+ *
+ * @var WP_Post
+ */
+	public $group = '';
+
+/*
+ * ID of the post
+ *
+ *
+ * @var int
+ */
+	public $ID = '';
+
+/*
+ * Instantiate a group object
+ *
+ *
+ *
+ * @return obejct GroupPressGroup
+ */
+	public function __construct( $id ){
+		$this->group = \WP_Post::get_instance( $id );
+
+		$this->ID = (int) $id;
+		
+		if ( $this->group ) {
+			$this->members = GroupPressGroup::get_group_members( $this->group->ID, false );
+		}
+	}
+
+/*
+ *  Register post types for groups
+ *
+ *
+ *
+ *  @return void
+ */
 	public static register_post_type( $slug = 'grouppress-group') {
 		$args = array(
 			'label' => 'GroupPress Group',
@@ -83,46 +116,72 @@ final class GroupPressGroup
 	}
 
 /*
- * Register group taxonomies
- *
- *
- * @return void
- */
-// havent found use case for this.
-	public static register_tax_types(){}
-
-/*
  * Register valid group status for workflow
  * 
  *
  *
  * @return void
  */
-//According to a few sites, not properly implemented. Will stick to built-in status for now.
-	public static register_status_types(){}
+
+	public static get_group_admin( $group_id = null ){
+
+		$group_id = (int) $group_id;
+
+		//TODO NOT FINISHED
+		if ( empty( $group_id ) ){
+			return new \GroupPress\member\GroupPressMember( $this->get_group_meta( $group_id, "admin" ) );
+		} else {
+			return new \GroupPress\member\GroupPressMember( $this->get_group_meta( $group_id, "admin" ) );
+		}
+	}
+	public static create_group( $args ){
+
+	}
+	public static search_group( $args ){
+	}
 
 /*
  * Returns all current members of group
  *
  * @param int $group_id ID of the group to retrieve members
+ * @param bool $active Toggle for returning only active members
  *
  * @return array of group member ids
  */
-	public static get_group_members( $group_id == false ){
+	public static get_group_members( $group_id = false, $active = true ){
 		if isset( $group_id == false )
 		{
 			/*
 			 * If the current post type is equal to the post type of the group, find the members.
 			 */
 			if ( GroupPressGroup::$post_type == \get_post_type( \get_the_ID() ) ) {
-				return \explode( ',', \get_post_meta( get_the_ID(), "members", true ));
+				if ( $active ) {
+					return \explode( ',', \get_post_meta( \get_the_ID(), "members", true ));
+				} else {
+
+					$members = array();
+					$members[ 'active' ] = \explode( ',', \get_post_meta( \get_the_ID(), "members", true ));
+					$members[ 'inactive' ] = \explode( ',', \get_post_meta( \get_the_ID(), "inactive_members", true ));
+					$members[ 'new' ] = \explode( ',', \get_post_meta( \get_the_ID(), "new_members", true ));
+
+					return $members;
+				}
 			}
 			
 			//TODO CREATE EXCEPTION HANDLING CLASS AND IMPLMENT THIS EXCPETION HANDLING
 			return false;
 		}
 
-		return \explode( ',', \get_post_meta( $group_id, "members", true ) );
+		$members = array();
+		$members[ 'active' ] = \explode( ',', \get_post_meta( $group_id, "members", true ));
+		$members[ 'inactive' ] = \explode( ',', \get_post_meta( $group_id, "inactive_members", true ));D
+		$members[ 'new' ] = \explode( ',', \get_post_meta( $group_id, "new_members", true ));
+
+		if( $active ) {
+			return $members[ 'active' ];
+		} else {
+			return $members;
+		}
 	}
 
 /*
@@ -145,7 +204,7 @@ final class GroupPressGroup
 		$current_members[] = $member_id;
 		$updated_members = \implode( ',' $current_member );
 
-	  if ( !\update_post_meta( $group_id, "members", $updated_members ) ) {
+		if ( !\update_post_meta( $group_id, "members", $updated_members ) ) {
 			//TODO Implement exception handling class here as well. For the short term, themes can handle false"
 			return false;
 		}		
@@ -219,84 +278,113 @@ final class GroupPressGroup
 
 
 /*
- * The current active group information returned in an array based on wordpress post_table
- * TODO add an example response
- *
- *
- * @return mixed The value false is returned on failure. An array of group information is returned otherwise
- */
-	public group_to_array(){}
-
-/*
  * Return the current active group member IDs
  *
  *
- * @return array The list of the current active group memeber IDs the active group
+ * @return array The list of the current group memeber IDs the active group
  */
-	public get_group_cur_group_members(){}
+	public get_group_cur_group_members( $active = true ){
+		if ( $active ) {
+			return $this->members['active'];
+		} else {
+			return $this->members;
+		}
+		
+	}
 
 /*
  * Uses the current group active group ID to retrieve the group meta data. 
  *
+ * @param string of meta keys to return
  *
- * @return array List of meta data about the group.
+ * @return mixed List of meta data about the group.
  */
-	public get_group_meta(){}
+	public get_group_meta( $meta_labl = null ){
+		if ( !$this->group ) {
+			return false;
+		}
+
+		if ( null == $meta_label ) {
+			return \get_post_meta( $this->ID );
+		} elseif { is_string( $meta_label ) ) {
+			return \get_post_meta( $this->ID, $meta_label, true );
+		} else {
+			//TODO exception handling....
+			return false
+		}
+	}
 
 /*
  * Add meta information to a group
  *
  * @param string $meta_label the databse label for the post_meta table. The value GroupPress_$this->ID is prepended to protect other meta with the same key
  * @param string $meta_value the meta information for the post_meta table. The value GroupPress_$this->ID is prepended to protect other meta with the same key
+ * @param bool is the meta key intended to be unique
  *
  * @return bool false on failure, true on success
  */
-	public add_group_meta( $meta_label, $meta_value ){}
+	public add_group_meta( $meta_label, $meta_value, $unique ){
+		return \add_post_meta( $this->ID, $meta_label, $meta_value, $unique );
+	}
 
 /*
- * Add member to current group
- *
- * @param int $member_id ID of the Member to add to the group. This action places the member in the "requested" status
- * @param bool $active Whether the intended member should go strait to active and bypass "requested" status. Default value is false. True bypass "requested" status.  
- *
- * @return bool false on failure, true on success
- */
-	public add_group_member( $member_id, $active=false ){}
-
-/*
- * Remove member to current group
- *
- * @param int $member_id ID of the Member to remove from the current group. This action removes a member. The members status in the database is marked as removed.
- *
- * @return bool false on failure, true on success
- */
-	public remove_group_member( $member_id ){}
-
-/*
- * List the members of the current active group in the "requested" status.
+ * List the members of the current active group in the "new" status.
  *
  *
  * @return array The array of member IDs of pending members.
  */
-	public list_pending_members(){}
+	public list_pending_members(){
+		return $this->members[ 'new' ];
+	}
 
 /*
  * Mark a member as inactive in the group
  *
  * @param int $member_id ID of the Member to remove from the current group. This action removes a member. The members status in the database is marked as removed.
+ * @param string $status status of the member update. expected values are as follows:
+ *     "new" (default) => add member to the new members list
+ *     "active" => add member to the active list.
+ *     "inactive" => add member to the inactive list.
+ *     "remove" => remove member from group
+ *
+ *     *note In all situations, the member is first removed from all current lists, and then reassigned accordingly
  *
  * @return bool true on success, false on failure
  */
-	public mark_member_inactive( $member_id )){}
+	public update_group_member( $member_id, $status='new' ) {
 
-/*
- * Mark a member as active in the group
- *
- * @param int $member_id ID of the Member to remove from the current group. This action removes a member. The members status in the database is marked as removed.
- *
- * @return bool true on success, false on failure
- */
-	public activate_member( $member_id ){}
+		if ( !$key = \array_search( $status, array( 'new', 'active', 'inactive', 'remove' ) ) or !is_string( $status ) ) {
+			return false;
+		}
+
+		$member_id = (int) $member_id;
+
+		if ( !isset( $member_id ) ) {
+			return false;
+		}
+
+		if ( is_array( $this->members ) ) {
+			foreach( $this->members as $member_status => $member_list ) {
+
+				if( $key = array_search( $member_id, $member_list ) ) {
+					unset( $this->members[ $member_status ][ $key ] );
+				}
+
+				if( $status == $member_status ) {
+					$this->members[ $member_status ][] = $member_id;
+				}
+
+				if ( 'active' != $member_stataus ) {
+					\update_post_meta( $this->ID, $member_status.'_members', \implode( ',', $this->members[ $member_status ] ) );
+				} else {
+					\update_post_meta( $this->ID, 'members', \implode( ',', $this->members[ 'active' ] ) );
+				}
+			}
+			return true;
+		} else {
+			return false;
+		}
+	}
 
 }
 ?>
