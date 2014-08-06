@@ -34,6 +34,10 @@ Class GroupPress
 	implements \GroupPress\wordpress_plugin
 {
 
+	public $top_level_category_id = "";
+	public $group_category_id = "";
+	public $member_category_id = "";
+
 	const VER = '0.1-dev';
 	const DB_VER = 1;
 /*
@@ -42,13 +46,16 @@ Class GroupPress
  *
  * @return void
  */
+
 	public function activate(){
 
 		$this->init_options();
 		$this->register_post_types();
+		$this->register_categories();
 		$this->maybe_update();
 		\flush_rewrite_rules();
 	}
+
 	public function maybe_update() {
 		//bail if this plugin data doesn't need updating
 		if ( get_option( 'GroupPress_db_ver' ) >= self::DB_VER ) {
@@ -60,6 +67,76 @@ Class GroupPress
 	}
 
 
+	public function register_categories( $args = null ){
+		if ( empty( $args ) ) {
+			$GroupPress_args = array(
+				'cat_name' => "GroupPress",
+				'category_description' => "Powered by GroupPress.",
+				'category_nicename' => "grouppress",
+				'taxonomy' => 'category' );
+			$this->top_level_category_id = \wp_insert_category( $GroupPress_args, $additional_child_categorty );
+
+			$group_args = array(
+				'cat_name' => "Group",
+				'category_description' => "Series of members organized together along with additional meta for recording achievement tracking.",
+				'category_nicename' => "member-group",
+				'category_parent' => $top_level_id,
+				'taxonomy' => 'category' );
+			$this->group_category_id = \wp_insert_category( $group_args );
+
+			$member_args = array(
+				'cat_name' => "Member",
+				'category_description' => "Wordpress User",
+				'category_nicename' => "member",
+				'category_parent' => $top_level_id,
+				'taxonomy' => 'category' );
+			$this->member_category_id = \wp_insert_category( $member_args );
+		} else {
+			if ( !empty( $args[ 'top' ] ) ) {
+				$GroupPress_args = $args['top'];
+			} else {
+				$GroupPress_args = array(
+					'cat_name' => "GroupPress",
+					'category_description' => "Powered by GroupPress.",
+					'category_nicename' => "grouppress",
+					'taxonomy' => 'category' );
+			}
+			$this->top_level_category_id = \wp_insert_category( $GroupPress_args );
+
+
+			if ( !empty( $args[ 'group' ] ) ) {
+				$group_args = $args[ 'group' ];
+			} else {
+				$group_args = array(
+					'cat_name' => "Group",
+					'category_description' => "Series of members organized together along with additional meta for recording achievement tracking.",
+					'category_nicename' => "member-group",
+					'category_parent' => $top_level_id,
+					'taxonomy' => 'category' );
+			}
+			$this->group_category_id = \wp_insert_category( $group_args );
+
+
+			if ( !empty( $args[ 'member' ] ) ) {
+				$member_args = $args[ 'member' ];
+			} else {
+				$member_args = array(
+					'cat_name' => "Member",
+					'category_description' => "Wordpress User",
+					'category_nicename' => "member",
+					'category_parent' => $top_level_id,
+					'taxonomy' => 'category' );
+			}
+			$this->member_category_id = \wp_insert_category( $member_args );
+		}
+	}
+
+	public function get_category_types() {
+
+		$this->top_level_category_id = get_cat_ID( 'GroupPress' ); 
+		$this->group_category_id = get_cat_ID( 'Group' );
+		$this->member_category_id = get_cat_ID( 'Member' );
+	}
 /*
  * Init Plugin Options
  *
@@ -94,7 +171,8 @@ Class GroupPress
  * @return void
  */
 	public function register_post_types(){
-		//TODO add static references to the member and group post_type declaration functions
+		GroupPressGroup::register_post_type();
+		GroupPressMember::register_post_type();
 	}
 	
 /*
@@ -103,52 +181,13 @@ Class GroupPress
  *
  * @return void
  */
+
 	public function bootstrap(){
 		\register_activation_hook( __FILE__, array( $this, 'activate' ) );
 
-		\add_action( 'init', array( $this, 'register_post_types' ) );
+		if ( empty($this->top_level_category_id) ) {
+			$this->get_category_types();
+		}
 	}
-	/*
-	public static function establish_post_type()
-	{
-		\register_post_type( 
-			'post', array(
-				'labels' => array(
-					'name_admin_bar' => _x( 'Group', 'add new on admin bar' ),
-				),
-				'public'  => true,
-				'capability_type' => 'post',
-				'map_meta_cap' => true,
-				'hierarchical' => false,
-				'rewrite' => false,
-				'query_var' => false,
-				'delete_with_user' => true,
-				'supports' => array( 'title', 'editor', 'author', 'thumbnail', 'excerpt', 'trackbacks', 'custom-fields', 'comments', 'revisions', 'post-formats' ),
-			) 
-		);
-	}
-
-	public static function establish_post_status()
-	{
-		\register_post_status( 
-			'active', 
-			array(
-				'label'       => _x( 'Active', 'GroupPress: Active group' ),
-				'public'      => true,
-				'label_count' => _n_noop( 'Established <span class="count">(%s)</span>', 'Established <span class="count">(%s)</span>' ),
-			)
-		);
-
-		\register_post_status( 
-			'inactive', 
-			array(
-				'label'       => _x( 'Inactive', 'GroupPress: Inactive group' ),
-				'public'      => true,
-				'label_count' => _n_noop( 'Inactive <span class="count">(%s)</span>', 'Inactive <span class="count">(%s)</span>' ),
-			) 
-		);
-
-	}
-	 */
 }
 ?>
