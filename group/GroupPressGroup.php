@@ -46,7 +46,7 @@ final class GroupPressGroup
  *
  * @var string
  */
-	public static final $post_type = 'GroupPress-group';
+	public static const $post_type = 'GroupPress-group';
 
 
 /*
@@ -66,6 +66,27 @@ final class GroupPressGroup
 	public $ID = '';
 
 /*
+ * Defualt arguments of group Post type for group creation
+ *
+ *
+ * @var array
+ */
+	public static $group_creation_defaults = array(
+		'post_status'           => 'draft',  // Status is not considered for groups. If you want to use this, you can update via $arg key 'post_status'
+		'post_type'             => GroupPressGroup::$post_type,   // Use class defined constant to retain consistancy
+		'ping_status'           => \get_option('default_ping_status'),  //not considered.
+		'post_parent'           => 0,  //Not considered for 1.0
+		'menu_order'            => 0,  //Not considered for 1.0
+		'to_ping'               =>  '', // N/A
+		'pinged'                => '',  // N/A
+		'post_password'         => '',  // Not considered for 1.0 although can be updated via input $args.
+		'guid'                  => '',  // guid
+		'post_content_filtered' => '',  // Not considered for 1.0 although can be updated via input $args
+		'post_excerpt'          => '',  // update via $args
+		'import_id'             => 0    // N/A
+	);
+
+/*
  * Instantiate a group object
  *
  *
@@ -80,6 +101,7 @@ final class GroupPressGroup
 		if ( $this->group ) {
 			$this->members = GroupPressGroup::get_group_members( $this->group->ID, false );
 		}
+
 	}
 
 /*
@@ -123,19 +145,44 @@ final class GroupPressGroup
  * @return void
  */
 
-	public static get_group_admin( $group_id = null ){
+	public get_group_admin(){
 
-		$group_id = (int) $group_id;
-
-		//TODO NOT FINISHED
-		if ( empty( $group_id ) ){
-			return new \GroupPress\member\GroupPressMember( $this->get_group_meta( $group_id, "admin" ) );
-		} else {
-			return new \GroupPress\member\GroupPressMember( $this->get_group_meta( $group_id, "admin" ) );
-		}
+		return new \GroupPress\member\GroupPressMember( $this->get_group_meta( $group_id, "group_admin" ) );
 	}
-	public static create_group( $args ){
 
+
+	public static create_group( $args, $requires_login = true ){
+
+
+		//Get Class standard arguments for group creation.
+		$my_group = GroupPressGroup::$group_creation_defaults;
+
+		//if user is required to be logged in and user is not logged in, return false;
+		if ( 0 === (int) ( $user_id = \get_current_user_id() ) and $requires_login ) {
+			return false;	
+
+		//if the user is logged in and require login is true, 
+		} else if ( $requires_login ) {
+			$my_group[ 'post_author' ] = $user_id;
+
+		//if the user is set in the args. One idea for this usage is implmenting theme functionallity to support group creation on behalf of another.
+		} else if ( array_key_exists( 'post_author', $my_group ) ) {
+			$my_group[ 'post_author' ] = $args[ 'post_author' ];
+		}
+
+		//Defines the minimum required content for post creation. Title and description required. Return false otherwise
+		if ( empty( $args[ 'post_title' ] ) or empty( $args[ 'post_content' ] ) ) {
+			return false;
+		}
+
+		//Update post creation args based on whats passed in.
+		foreach ( $args as $key_to_update => $value_to_update ) {
+			if ( 'post_type' != $key_to_update and array_key_exists( $key_to_update, $defualts ) ) {
+				$my_group[ $key_to_update ] = $value_to_update;
+			}
+		}
+
+		return \wp_insert_post( $my_group );
 	}
 	public static search_group( $args ){
 	}
@@ -149,7 +196,7 @@ final class GroupPressGroup
  * @return array of group member ids
  */
 	public static get_group_members( $group_id = false, $active = true ){
-		if isset( $group_id == false )
+		if !empty( $group_id )
 		{
 			/*
 			 * If the current post type is equal to the post type of the group, find the members.
