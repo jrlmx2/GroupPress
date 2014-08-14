@@ -33,13 +33,8 @@ namespace GroupPress\plugin;
 Class GroupPress
 	implements \GroupPress\wordpress_plugin
 {
-
-	public $top_level_category_id = "";
-	public $group_category_id = "";
-	public $member_category_id = "";
-
-	const VER = '0.1-dev';
-	const DB_VER = 1;
+	const $VER = '0.1-dev';
+	const $DB_VER = 1;
 /*
  * Activate the plugin and setup post_types
  *
@@ -58,7 +53,7 @@ Class GroupPress
 
 	public function maybe_update() {
 		//bail if this plugin data doesn't need updating
-		if ( get_option( 'GroupPress_db_ver' ) >= self::DB_VER ) {
+		if ( get_option( 'GroupPress_db_ver' ) >= GroupPress::$DB_VER ) {
 			return;
 		}
 
@@ -67,76 +62,6 @@ Class GroupPress
 	}
 
 
-	public function register_categories( $args = null ){
-		if ( empty( $args ) ) {
-			$GroupPress_args = array(
-				'cat_name' => "GroupPress",
-				'category_description' => "Powered by GroupPress.",
-				'category_nicename' => "grouppress",
-				'taxonomy' => 'category' );
-			$this->top_level_category_id = \wp_insert_category( $GroupPress_args, $additional_child_categorty );
-
-			$group_args = array(
-				'cat_name' => "Group",
-				'category_description' => "Series of members organized together along with additional meta for recording achievement tracking.",
-				'category_nicename' => "member-group",
-				'category_parent' => $top_level_id,
-				'taxonomy' => 'category' );
-			$this->group_category_id = \wp_insert_category( $group_args );
-
-			$member_args = array(
-				'cat_name' => "Member",
-				'category_description' => "Wordpress User",
-				'category_nicename' => "member",
-				'category_parent' => $top_level_id,
-				'taxonomy' => 'category' );
-			$this->member_category_id = \wp_insert_category( $member_args );
-		} else {
-			if ( !empty( $args[ 'top' ] ) ) {
-				$GroupPress_args = $args['top'];
-			} else {
-				$GroupPress_args = array(
-					'cat_name' => "GroupPress",
-					'category_description' => "Powered by GroupPress.",
-					'category_nicename' => "grouppress",
-					'taxonomy' => 'category' );
-			}
-			$this->top_level_category_id = \wp_insert_category( $GroupPress_args );
-
-
-			if ( !empty( $args[ 'group' ] ) ) {
-				$group_args = $args[ 'group' ];
-			} else {
-				$group_args = array(
-					'cat_name' => "Group",
-					'category_description' => "Series of members organized together along with additional meta for recording achievement tracking.",
-					'category_nicename' => "member-group",
-					'category_parent' => $top_level_id,
-					'taxonomy' => 'category' );
-			}
-			$this->group_category_id = \wp_insert_category( $group_args );
-
-
-			if ( !empty( $args[ 'member' ] ) ) {
-				$member_args = $args[ 'member' ];
-			} else {
-				$member_args = array(
-					'cat_name' => "Member",
-					'category_description' => "Wordpress User",
-					'category_nicename' => "member",
-					'category_parent' => $top_level_id,
-					'taxonomy' => 'category' );
-			}
-			$this->member_category_id = \wp_insert_category( $member_args );
-		}
-	}
-
-	public function get_category_types() {
-
-		$this->top_level_category_id = get_cat_ID( 'GroupPress' ); 
-		$this->group_category_id = get_cat_ID( 'Group' );
-		$this->member_category_id = get_cat_ID( 'Member' );
-	}
 /*
  * Init Plugin Options
  *
@@ -145,8 +70,8 @@ Class GroupPress
  */
 	public function init_options(){
 
-		update_option( 'GroupPress_ver', self::VER );
-		add_option( 'GroupPress_db_ver', self::DB_VER );
+		update_option( 'GroupPress_ver', GroupPress::$VER );
+		add_option( 'GroupPress_db_ver', GroupPress::$DB_VER );
 
 		add_option( 'GroupPress_prev_ver', 0 );
 		add_option( 'GroupPress_posts_per_page', 5 );
@@ -185,9 +110,6 @@ Class GroupPress
 	public function bootstrap(){
 		\register_activation_hook( __FILE__, array( $this, 'activate' ) );
 
-		if ( empty($this->top_level_category_id) ) {
-			$this->get_category_types();
-		}
 	}
 }
 ?>

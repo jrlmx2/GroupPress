@@ -184,8 +184,6 @@ final class GroupPressGroup
 
 		return \wp_insert_post( $my_group );
 	}
-	public static search_group( $args ){
-	}
 
 /*
  * Returns all current members of group
