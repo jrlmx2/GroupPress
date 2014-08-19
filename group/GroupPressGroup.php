@@ -41,6 +41,7 @@ final class GroupPressGroup
 	public $members = '';
 
 /*
+ *
  * Post Type String for object checking
  *
  *
@@ -77,7 +78,7 @@ final class GroupPressGroup
 		'ping_status'           => \get_option('default_ping_status'),  //not considered.
 		'post_parent'           => 0,  //Not considered for 1.0
 		'menu_order'            => 0,  //Not considered for 1.0
-		'to_ping'               =>  '', // N/A
+		'to_ping'               => '', // N/A
 		'pinged'                => '',  // N/A
 		'post_password'         => '',  // Not considered for 1.0 although can be updated via input $args.
 		'guid'                  => '',  // guid
@@ -93,13 +94,18 @@ final class GroupPressGroup
  *
  * @return obejct GroupPressGroup
  */
-	public function __construct( $id ){
+	public function __construct( $id, $require_login ){
 		$this->group = \WP_Post::get_instance( $id );
-
 		$this->ID = (int) $id;
-		
+
+		//if the inserted post time is not a GroupPress group, make a new post that is a GroupPress Group
+		if( $this->group[['post_type'] != GroupPressGroup::$post_type ) {
+			$this->ID = GroupPressGroup::create_group( $this->group, $require_login );
+			$this->group = \WP_Post::get_instance( $this->ID );
+		}
+
 		if ( $this->group ) {
-			$this->members = GroupPressGroup::get_group_members( $this->group->ID, false );
+			$this->members = GroupPressGroup::get_group_members( $this->ID, false );
 		}
 
 	}
@@ -111,7 +117,7 @@ final class GroupPressGroup
  *
  *  @return void
  */
-	public static register_post_type( $slug = 'grouppress-group') {
+	public static function register_post_type( $slug = 'grouppress-group') {
 		$args = array(
 			'label' => 'GroupPress Group',
 			'public' => true,
@@ -145,13 +151,13 @@ final class GroupPressGroup
  * @return void
  */
 
-	public get_group_admin(){
+	public function get_group_admin(){
 
 		return new \GroupPress\member\GroupPressMember( $this->get_group_meta( $group_id, "group_admin" ) );
 	}
 
 
-	public static create_group( $args, $requires_login = true ){
+	public static function create_group( $args, $requires_login = true ){
 
 
 		//Get Class standard arguments for group creation.
@@ -194,7 +200,7 @@ final class GroupPressGroup
  * @return array of group member ids
  */
 	public static get_group_members( $group_id = false, $active = true ){
-		if !empty( $group_id )
+		if( !empty( $group_id ) )
 		{
 			/*
 			 * If the current post type is equal to the post type of the group, find the members.
@@ -229,62 +235,6 @@ final class GroupPressGroup
 		}
 	}
 
-/*
- * Add a member to a group
- *
- * @param int $group_id ID of the group to retrieve members
- * @param int $member_id ID of the group to retrieve members
- *
- * @return bool was the addition successful
- */
-	public static add_group_member( $group_id, $member_id ){
-		$group_id = (int) $group_id;
-		$member_id = (int) $member_id;
-
-		/*
-		 * //TODO Check if I need to force cache updates after adding a member
-		 */ 
-		
-		$current_members = \explode( ',', \get_post_meta( $group_id, "members", true ) );
-		$current_members[] = $member_id;
-		$updated_members = \implode( ',' $current_member );
-
-		if ( !\update_post_meta( $group_id, "members", $updated_members ) ) {
-			//TODO Implement exception handling class here as well. For the short term, themes can handle false"
-			return false;
-		}		
-
-		return true;
-	}
-
-/*
- * Remove a member to a group
- *
- * @param int $group_id ID of the group to retrieve members
- * @param int $member_id ID of the group to retrieve members
- *
- * @return bool was the removal successful
- */
-	public static remove_group_member( $group_id, $member_id ){
-		$group_id = (int) $group_id;¬
-		$member_id = (int) $member_id;¬
-
-		/*¬
-		* //TODO Check if I need to force cache updates after adding a member¬
-		*/·¬
-
-		$current_members = \explode( ',', \get_post_meta( $group_id, "members", true ) );¬
-
-		if( ($key = \array_search($member_id, $current_members) ) !== false) {
-			    unset($current_members[$key]);
-		} else {
-			//TODO Implement exception handling class here as well"¬
-			return false;
-		}
-
-		return true;
-
-	}
 
 /*
  * List the most newly created groups limited on $limit. If limit is not set
@@ -396,7 +346,7 @@ final class GroupPressGroup
  *
  * @return bool true on success, false on failure
  */
-	public update_group_member( $member_id, $status='new' ) {
+	public static update_group_member( $member_id, $status='new' ) {
 
 		if ( !$key = \array_search( $status, array( 'new', 'active', 'inactive', 'remove' ) ) or !is_string( $status ) ) {
 			return false;
