@@ -31,9 +31,8 @@ namespace GroupPress;
 
 interface member
 {
-	public function get_member_meta ( );
-	public function add_memberr_meta ( );
-	public function remove_member_meta ( );
 	public function member_data ( );
+	public function update_data ( );
+	public function create_member ( ); 
 }
 ?>

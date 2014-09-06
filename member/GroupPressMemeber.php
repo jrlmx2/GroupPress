@@ -72,7 +72,7 @@ Class GroupPressMember
  *
  * @var mixed false upon empty member_of post_meta value for the member details post. Array of group IDs otherwise.
  */
-	public $is_member = '';
+	public $member_of = '';
 
 /*
  * Defualt arguments of group Post type for group creation
@@ -122,16 +122,12 @@ Class GroupPressMember
 		}
 
 		//find groups member is a group of
-		if( isset( $group_ids = \get_post_meta( $id, "group_ids", true ) ) ){
+		if( isset( $group_ids = \get_post_meta( $id, "member_of", true ) ) ){
 			$this->member_of = explode( ',', $group_ids ); 
 		} else {
 			$this->member_of = false;
 		}
 		
-		if ( $this->group ) {
-			$this->members = GroupPressGroup::get_group_members( $this->group->ID, false );
-		}
-
 	}
 
 /*
@@ -165,8 +161,57 @@ Class GroupPressMember
 			)
 		);
 		register_post_type( GroupPressMember::$post_type , $args );
+	}
 
-	public static function update_member_status( $member_id, $group_id ){
+/*
+ *  Add the current group to the list of active groups for the member. 
+ *
+ *
+ *
+ *  @return void
+ */
+
+	public static function update_member_status( &$member, $new_group_id, $action="new" ){
+
+		if ( !$key = \array_search( $action, array( 'new', 'active', 'inactive', 'remove' ) ) or !is_string( $action ) ) {
+			return false;
+		}
+
+		if( isset( $member ) && get_class( $member ) == "GroupPressMemeber" ) {
+			$member_id = $member->ID;
+		} else {
+			if ( !empty((int) $member) ) {
+				$member_id = $member->ID;
+			} else {
+				//TODO error or check the current post
+				return false;
+			}
+		}
+
+		if( isset( $new_group_ids = \get_post_meta( $member_id, "member_of", true ) ) ) {
+			$group_ids = explode( ",", $new_group_ids );
+		} else {
+			$group_ids = array();
+		}
+
+		if( "remove" === $action ) {
+			if( $key = array_search( $member_id, $member_list ) ) {
+				unset( $this->members[ $member_status ][ $key ] );
+			}
+		}
+
+		if ( !$key = \array_search( $action, array( 'new', 'active', 'inactive' ) )
+			array_push( $group_ids, $new_group_id );
+		}
+
+		update_post_meta( $member_id, "member_of", implode( ",", $group_ids ) );
+
+		if( get_class( $member ) == "GroupPressMemeber" ) {
+			$member->member_of = $group_ids;
+		}
+
+		GroupPressGroup::update_group_member( $new_group_id, $member_id, $action );
+
 	}
 }
 ?>

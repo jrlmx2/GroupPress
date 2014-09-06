@@ -1,10 +1,19 @@
 -- Business Requirements -- 
-Must have a group object in WP  //extends WP_Posts
-Must have a group member object  // extends WP_Users
-Must have group memeber meta data //user_meta_data
- |-- >Must keep track of active members, inactive members //user_meta_data
- |-- >Must have contact information for each user //WP_user.....
-Must be able to define 1/1+ group organizers // how to set user privilages with regards to post type?
+Group
+	Must be able to add/manage members
+	Must be able to search and list groups
+	Taxonomies are defined at implementation theme and are out of scope for this plugin development
+
+Member
+	Must create a member for each user at login time.
+	Member must track member taxonomies and events participated in.
+	Must support information update/parsing hook.
+
+plugin
+	The plugin itself, must support updates. 
+	Must support first time installs
+	
+
 
 Scheduling --- OUT OF SCOPE FOR THIS INITITIVE --- not implemented
  Post Type
@@ -13,8 +22,8 @@ Scheduling --- OUT OF SCOPE FOR THIS INITITIVE --- not implemented
 -- Code Standards --
 Namespace required in every PHP file. 
 Interface required for all PHP Class objects.
-Global functions must be explicitly defined with \
-Standard PHP docs comments required for all added functionallity.
+Global functions must be explicitly called with \
+Standard PHP docs comments required for all functionallity.
 
 function_names  <----- ALL LOWER CASE WITH UNDERSCOR SEP.
 ClassName <---- CAMEL CASE STARTING WITH captial
