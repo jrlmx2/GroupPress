@@ -33,8 +33,8 @@ namespace GroupPress\plugin;
 Class GroupPress
 	implements \GroupPress\wordpress_plugin
 {
-	const $VER = '0.1-dev';
-	const $DB_VER = 1;
+	const VER = '0.1-dev';
+	const DB_VER = 1;
 /*
  * Activate the plugin and setup post_types
  *
